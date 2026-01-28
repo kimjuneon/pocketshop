@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Pocketshop</title>
+    <style>
+        :root{
+          --bg:#0b1020;
+          --card:#121a33;
+          --line:#22305a;
+          --text:#e8eeff;
+          --muted:#a9b6e6;
+          --ok:#48d597;
+          --bad:#ff6b6b;
+          --btn:#1a2552;
+          --btn2:#22306a;
+        }
+        *{ box-sizing:border-box; }
+        body{
+          margin:0;
+          font-family: system-ui,-apple-system,Segoe UI,Roboto,"Apple SD Gothic Neo","Noto Sans KR",Arial,sans-serif;
+          background:var(--bg);
+          color:var(--text);
+        }
+        .wrap{ max-width: 1024px; margin:0 auto; padding:16px; }
+
+        header{
+          position:sticky; top:0; z-index:10;
+          background:rgba(11,16,32,.86);
+          backdrop-filter: blur(10px);
+          border-bottom:1px solid var(--line);
+        }
+        .top{
+          display:flex; gap:12px; align-items:center; flex-wrap:wrap;
+          padding:14px 16px;
+        }
+        .title{ font-size:16px; font-weight:700; }
+        .sub{ font-size:12px; color:var(--muted); margin-top:2px; }
+        .grow{ flex:1; min-width: 220px; }
+
+        .pill{
+          display:inline-flex; align-items:center; gap:8px;
+          padding:6px 10px;
+          border:1px solid var(--line);
+          background:#0f1630;
+          border-radius:999px;
+          font-size:12px;
+          color:var(--muted);
+          white-space:nowrap;
+        }
+        .dot{ width:8px; height:8px; border-radius:50%; background:var(--muted); }
+        .dot.ok{ background:var(--ok); }
+        .dot.bad{ background:var(--bad); }
+
+        input, select, button, textarea{
+          background:#0f1630;
+          color:var(--text);
+          border:1px solid var(--line);
+          border-radius:10px;
+          padding:10px 12px;
+          outline:none;
+        }
+        input:focus, select:focus, textarea:focus{ border-color:#3a55a5; }
+        button{
+          cursor:pointer;
+          background:var(--btn);
+        }
+        button:hover{ background:var(--btn2); }
+        button.primary{ background:#2b3d86; border-color:#3852ad; }
+        button.primary:hover{ background:#334aa0; }
+        button.danger{ background:#3a1830; border-color:#6a2a50; }
+        button.danger:hover{ background:#4a1f3a; }
+
+        main{ padding:16px; }
+        .grid{
+          display:grid;
+          grid-template-columns: 1fr;
+          gap:14px;
+        }
+        @media (min-width: 980px){
+          .grid{ grid-template-columns: 1fr 1fr; }
+        }
+        .card{
+          background:var(--card);
+          border:1px solid var(--line);
+          border-radius:14px;
+          padding:14px;
+        }
+        .cardTitle{
+          display:flex; justify-content:space-between; align-items:center; gap:10px;
+          margin-bottom:10px;
+        }
+        .cardTitle h2{ margin:0; font-size:15px; }
+        .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+        .form{
+          display:grid;
+          gap:10px;
+          margin-bottom:12px;
+        }
+        .form .line{
+          display:grid;
+          grid-template-columns: 1fr;
+          gap:10px;
+        }
+        @media (min-width: 720px){
+          .form .line{ grid-template-columns: 1fr 1fr; }
+        }
+
+        .seg{
+          padding:12px;
+          border:1px solid rgba(34,48,90,.7);
+          border-radius:12px;
+          background:#0f1630;
+        }
+        .seg h3{ margin:0 0 10px; font-size:13px; color:var(--muted); font-weight:700; }
+        .seg .actions{ display:flex; gap:8px; flex-wrap:wrap; }
+
+        table{ width:100%; border-collapse:collapse; }
+        th, td{
+          padding:9px 8px;
+          border-bottom:1px solid rgba(34,48,90,.65);
+          font-size:13px;
+          text-align:left;
+        }
+        th{ color:var(--muted); font-weight:700; }
+        .right{ text-align:right; }
+        .tableWrap{ overflow:auto; border:1px solid rgba(34,48,90,.7); border-radius:12px; }
+        .tableHead{
+          display:flex; justify-content:space-between; align-items:center; gap:10px;
+          margin:10px 0 8px;
+          flex-wrap:wrap;
+        }
+
+        .log{
+          width:100%;
+          min-height:130px;
+          resize:vertical;
+          font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
+          font-size:12px;
+        }
+        .hint{ color:var(--muted); font-size:12px; }
+    </style>
+</head>
+<body>
+<header>
+    <div class="top wrap">
+        <div class="grow">
+            <div class="title">Pocketshop</div>
+            <div class="sub">상품 / 주문 관리 (단일 페이지)</div>
+        </div>
+
+        <span class="pill">
+      <span class="dot" id="healthDot"></span>
+      <span id="healthText">서버 상태: 미확인</span>
+    </span>
+
+        <input id="baseUrl" class="grow" placeholder="Base URL (예: http://localhost:8080) — 비우면 현재 도메인" />
+        <button class="primary" id="btnRefreshAll">새로고침</button>
+    </div>
+</header>
+
+<main class="wrap">
+    <div class="grid">
+
+        <!-- Products -->
+        <section class="card">
+            <div class="cardTitle">
+                <h2>상품</h2>
+                <div class="row">
+                    <button id="btnRefreshProducts">목록 새로고침</button>
+                </div>
+            </div>
+
+            <div class="form">
+                <div class="seg">
+                    <h3>상품 등록</h3>
+                    <div class="line">
+                        <input id="pCreateName" placeholder="이름" />
+                        <input id="pCreatePrice" type="number" min="0" placeholder="가격" />
+                    </div>
+                    <div class="line">
+                        <input id="pCreateNum" type="number" min="0" placeholder="재고(num)" />
+                    </div>
+                    <div class="actions">
+                        <button class="primary" id="btnCreateProduct">등록</button>
+                        <button id="btnFillSampleProduct">예시</button>
+                    </div>
+                </div>
+
+                <div class="seg">
+                    <h3>상품 수정</h3>
+                    <div class="line">
+                        <input id="pUpdateId" type="number" min="1" placeholder="상품 ID" />
+                        <input id="pUpdateName" placeholder="이름(선택)" />
+                    </div>
+                    <div class="line">
+                        <input id="pUpdatePrice" type="number" min="0" placeholder="가격(선택)" />
+                        <input id="pUpdateAddNum" type="number" min="0" placeholder="추가 재고(선택)" />
+                    </div>
+                    <div class="actions">
+                        <button class="primary" id="btnUpdateProduct">수정</button>
+                        <button id="btnLoadToUpdate">선택 불러오기</button>
+                    </div>
+                </div>
+
+                <div class="seg">
+                    <h3>상품 삭제</h3>
+                    <div class="line">
+                        <input id="pDeleteId" type="number" min="1" placeholder="삭제할 상품 ID" />
+                    </div>
+                    <div class="actions">
+                        <button class="danger" id="btnDeleteProduct">삭제</button>
+                        <button id="btnUseSelectedForDelete">선택 ID 사용</button>
+                    </div>
+                    <div class="hint">삭제는 JSON body가 필요한 엔드포인트면 그대로 동작합니다.</div>
+                </div>
+            </div>
+
+            <div class="tableHead">
+                <div class="row">
+                    <span class="pill">상품 <b id="productCount" style="color:var(--text); font-weight:800;">0</b>개</span>
+                    <span class="hint">행의 “선택” 버튼을 누르면 주문/수정/삭제 입력이 자동 채워집니다.</span>
+                </div>
+                <div class="row">
+                    <input id="productFilter" placeholder="필터: id/이름" />
+                    <button id="btnClearProductFilter">초기화</button>
+                </div>
+            </div>
+
+            <div class="tableWrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th style="width:70px;">ID</th>
+                        <th>이름</th>
+                        <th style="width:110px;">가격</th>
+                        <th style="width:110px;">재고</th>
+                        <th class="right" style="width:120px;">선택</th>
+                    </tr>
+                    </thead>
+                    <tbody id="productTbody">
+                    <tr><td colspan="5" class="hint">아직 불러오지 않았습니다.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Orders -->
+        <section class="card">
+            <div class="cardTitle">
+                <h2>주문</h2>
+                <div class="row">
+                    <button id="btnRefreshOrders">목록 새로고침</button>
+                </div>
+            </div>
+
+            <div class="seg">
+                <h3>주문 생성</h3>
+                <div class="line">
+                    <select id="orderProductSelect">
+                        <option value="">상품 선택</option>
+                    </select>
+                    <input id="oProductId" type="number" min="1" placeholder="productId (직접 입력 가능)" />
+                </div>
+                <div class="line">
+                    <input id="oNum" type="number" min="1" placeholder="주문 수량(num)" />
+                </div>
+                <div class="actions">
+                    <button class="primary" id="btnCreateOrder">주문 생성</button>
+                    <button id="btnFillSampleOrder">예시</button>
+                </div>
+                <div class="hint">주문 생성 시 재고가 부족하면 서버에서 에러가 납니다.</div>
+            </div>
+
+            <div class="tableHead">
+                <div class="row">
+                    <span class="pill">주문 <b id="orderCount" style="color:var(--text); font-weight:800;">0</b>건</span>
+                </div>
+                <div class="row">
+                    <input id="orderFilter" placeholder="필터: 주문ID/상품ID/상품명" />
+                    <button id="btnClearOrderFilter">초기화</button>
+                </div>
+            </div>
+
+            <div class="tableWrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th style="width:90px;">주문ID</th>
+                        <th style="width:90px;">상품ID</th>
+                        <th>상품명</th>
+                        <th style="width:140px;">수량</th>
+                    </tr>
+                    </thead>
+                    <tbody id="orderTbody">
+                    <tr><td colspan="4" class="hint">아직 불러오지 않았습니다.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="seg" style="margin-top:12px;">
+                <h3>로그</h3>
+                <textarea id="log" class="log" readonly placeholder="요청/응답 로그"></textarea>
+                <div class="actions" style="margin-top:8px;">
+                    <button id="btnClearLog">로그 비우기</button>
+                </div>
+            </div>
+        </section>
+
+    </div>
+</main>
+
+<script>
+    // ===== Utilities =====
+    const $ = (id) => document.getElementById(id);
+
+    function now() {
+      const d = new Date();
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    function logLine(msg) {
+      const el = $("log");
+      el.value += `[${now()}] ${msg}\n`;
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function getBaseUrl() {
+      const v = $("baseUrl").value.trim();
+      return v ? v.replace(/\/+$/, "") : "";
+    }
+
+    async function http(path, { method="GET", body=null } = {}) {
+      const base = getBaseUrl();
+      const url = base + path;
+
+      const headers = { "Accept": "application/json" };
+      const opts = { method, headers };
+
+      if (body !== null) {
+        headers["Content-Type"] = "application/json";
+        opts.body = JSON.stringify(body);
+      }
+
+      logLine(`${method} ${url}` + (body ? ` body=${JSON.stringify(body)}` : ""));
+
+      let res;
+      try {
+        res = await fetch(url, opts);
+      } catch (e) {
+        logLine(`❌ 네트워크 오류: ${e?.message ?? e}`);
+        throw e;
+      }
+
+      const ct = res.headers.get("content-type") || "";
+      const isJson = ct.includes("application/json");
+      const payload = isJson ? await res.json().catch(() => null) : await res.text().catch(() => "");
+
+      if (!res.ok) {
+        const errText = isJson ? JSON.stringify(payload) : String(payload);
+        logLine(`❌ HTTP ${res.status} ${res.statusText} - ${errText}`);
+        throw new Error(`HTTP ${res.status}: ${errText}`);
+      }
+
+      logLine(`✅ HTTP ${res.status} OK`);
+      return payload;
+    }
+
+    function setHealth(ok, text) {
+      const dot = $("healthDot");
+      const label = $("healthText");
+      dot.classList.remove("ok", "bad");
+      dot.classList.add(ok ? "ok" : "bad");
+      label.textContent = text;
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    // ===== State =====
+    let products = [];
+    let orders = [];
+    let selectedProductId = null;
+
+    // ===== Render =====
+    function renderProducts() {
+      const filter = $("productFilter").value.trim().toLowerCase();
+
+      const list = products.filter(p => {
+        if (!filter) return true;
+        const idStr = String(p.id ?? "");
+        const nameStr = String(p.name ?? "").toLowerCase();
+        return idStr.includes(filter) || nameStr.includes(filter);
+      });
+
+      $("productCount").textContent = String(list.length);
+
+      const tbody = $("productTbody");
+      tbody.innerHTML = "";
+
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="hint">상품이 없습니다.</td></tr>`;
+        return;
+      }
+
+      for (const p of list) {
+        const tr = document.createElement("tr");
+        const isSelected = String(p.id) === String(selectedProductId);
+
+        tr.innerHTML = `
+          <td>${p.id ?? ""}</td>
+          <td>${escapeHtml(p.name ?? "")}</td>
+          <td>${p.price ?? ""}</td>
+          <td>${p.num ?? ""}</td>
+          <td class="right">
+            <button class="${isSelected ? "primary" : ""}">선택</button>
+          </td>
+        `;
+
+        tr.querySelector("button").addEventListener("click", () => {
+          selectedProductId = p.id;
+
+          // 주문 입력 편의
+          $("oProductId").value = p.id;
+          syncOrderSelect();
+
+          // 수정/삭제 입력 편의
+          $("pUpdateId").value = String(p.id);
+          $("pUpdateName").value = p.name ?? "";
+          $("pUpdatePrice").value = p.price ?? "";
+          $("pUpdateAddNum").value = "";
+          $("pDeleteId").value = String(p.id);
+
+          renderProducts();
+          logLine(`선택된 상품 ID: ${p.id}`);
+        });
+
+        tbody.appendChild(tr);
+      }
+    }
+
+    function syncOrderSelect() {
+      const select = $("orderProductSelect");
+      const current = String(select.value || "");
+      select.innerHTML = `<option value="">상품 선택</option>`;
+
+      for (const p of products) {
+        const opt = document.createElement("option");
+        opt.value = String(p.id);
+        opt.textContent = `#${p.id} ${p.name} (재고:${p.num})`;
+        select.appendChild(opt);
+      }
+
+      if (selectedProductId != null) {
+        select.value = String(selectedProductId);
+      } else if (current) {
+        select.value = current;
+      }
+    }
+
+    function renderOrders() {
+      const filter = $("orderFilter").value.trim().toLowerCase();
+
+      const list = orders.filter(o => {
+        if (!filter) return true;
+        const orderId = String(o.orderId ?? "");
+        const productId = String(o.productId ?? "");
+        const name = String(o.productName ?? "").toLowerCase();
+        return orderId.includes(filter) || productId.includes(filter) || name.includes(filter);
+      });
+
+      $("orderCount").textContent = String(list.length);
+
+      const tbody = $("orderTbody");
+      tbody.innerHTML = "";
+
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="hint">주문이 없습니다.</td></tr>`;
+        return;
+      }
+
+      for (const o of list) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${o.orderId ?? ""}</td>
+          <td>${o.productId ?? ""}</td>
+          <td>${escapeHtml(o.productName ?? "")}</td>
+          <td>${o.productNum ?? ""}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    // ===== API Calls =====
+    async function refreshProducts() {
+      const data = await http("/api/product/get_all");
+      products = Array.isArray(data?.products) ? data.products : [];
+      logLine(`상품 ${products.length}개 로드`);
+      syncOrderSelect();
+      renderProducts();
+    }
+
+    async function refreshOrders() {
+      const data = await http("/api/order/get_all");
+      orders = Array.isArray(data?.orderDetails) ? data.orderDetails : [];
+      logLine(`주문 ${orders.length}건 로드`);
+      renderOrders();
+    }
+
+    async function healthCheck() {
+      try {
+        await refreshProducts();
+        setHealth(true, "서버 상태: 정상");
+      } catch (e) {
+        setHealth(false, "서버 상태: 오류 (Base URL/서버 확인)");
+      }
+    }
+
+    async function createProduct() {
+      const name = $("pCreateName").value.trim();
+      const price = Number($("pCreatePrice").value);
+      const num = Number($("pCreateNum").value);
+
+      if (!name) return alert("상품명을 입력하세요.");
+      if (!Number.isFinite(price)) return alert("가격을 입력하세요.");
+      if (!Number.isFinite(num)) return alert("재고(num)를 입력하세요.");
+
+      await http("/api/product/create", { method: "POST", body: { name, price, num } });
+
+      $("pCreateName").value = "";
+      $("pCreatePrice").value = "";
+      $("pCreateNum").value = "";
+      await refreshProducts();
+    }
+
+    async function updateProduct() {
+      const id = Number($("pUpdateId").value);
+      const nameRaw = $("pUpdateName").value.trim();
+      const priceRaw = $("pUpdatePrice").value;
+      const addNumRaw = $("pUpdateAddNum").value;
+
+      if (!Number.isFinite(id) || id <= 0) return alert("수정할 상품 ID를 입력하세요.");
+
+      const body = { id };
+      if (nameRaw) body.name = nameRaw;
+
+      if (priceRaw !== "") {
+        const price = Number(priceRaw);
+        if (!Number.isFinite(price) || price < 0) return alert("price는 0 이상의 숫자여야 합니다.");
+        body.price = price;
+      }
+      if (addNumRaw !== "") {
+        const addNum = Number(addNumRaw);
+        if (!Number.isFinite(addNum) || addNum < 0) return alert("addNum은 0 이상의 숫자여야 합니다.");
+        body.addNum = addNum;
+      }
+
+      await http("/api/product/update", { method: "PUT", body });
+      await refreshProducts();
+    }
+
+    async function deleteProduct() {
+      const productId = Number($("pDeleteId").value);
+      if (!Number.isFinite(productId) || productId <= 0) return alert("삭제할 상품 ID를 입력하세요.");
+      if (!confirm(`상품 ID ${productId}를 삭제할까요?`)) return;
+
+      await http("/api/product/delete", { method: "DELETE", body: { productId } });
+
+      if (String(selectedProductId) === String(productId)) selectedProductId = null;
+      await refreshProducts();
+    }
+
+    async function createOrder() {
+      const selected = $("orderProductSelect").value;
+      const productIdInput = $("oProductId").value.trim();
+      const numRaw = $("oNum").value;
+
+      const productId = Number(selected || productIdInput);
+      const num = Number(numRaw);
+
+      if (!Number.isFinite(productId) || productId <= 0) return alert("productId를 선택하거나 입력하세요.");
+      if (!Number.isFinite(num) || num <= 0) return alert("주문 수량(num)을 1 이상으로 입력하세요.");
+
+      await http("/api/order/create", { method: "POST", body: { productId, num } });
+
+      $("oNum").value = "";
+      await refreshProducts();
+      await refreshOrders();
+    }
+
+    // ===== Events =====
+    $("btnRefreshAll").addEventListener("click", async () => {
+      await healthCheck();
+      try { await refreshOrders(); } catch (_) {}
+    });
+
+    $("btnRefreshProducts").addEventListener("click", refreshProducts);
+    $("btnRefreshOrders").addEventListener("click", refreshOrders);
+
+    $("btnCreateProduct").addEventListener("click", async () => { try { await createProduct(); } catch(_) {} });
+    $("btnUpdateProduct").addEventListener("click", async () => { try { await updateProduct(); } catch(_) {} });
+    $("btnDeleteProduct").addEventListener("click", async () => { try { await deleteProduct(); } catch(_) {} });
+    $("btnCreateOrder").addEventListener("click", async () => { try { await createOrder(); } catch(_) {} });
+
+    $("orderProductSelect").addEventListener("change", (e) => {
+      const v = e.target.value;
+      if (v) {
+        selectedProductId = Number(v);
+        $("oProductId").value = v;
+        renderProducts();
+      }
+    });
+
+    $("btnFillSampleProduct").addEventListener("click", () => {
+      $("pCreateName").value = "아메리카노";
+      $("pCreatePrice").value = "4500";
+      $("pCreateNum").value = "30";
+    });
+
+    $("btnFillSampleOrder").addEventListener("click", () => {
+      if (selectedProductId != null) $("oProductId").value = String(selectedProductId);
+      $("oNum").value = "1";
+    });
+
+    $("btnUseSelectedForDelete").addEventListener("click", () => {
+      if (selectedProductId == null) return alert("먼저 상품을 선택하세요.");
+      $("pDeleteId").value = String(selectedProductId);
+    });
+
+    $("btnLoadToUpdate").addEventListener("click", () => {
+      if (selectedProductId == null) return alert("먼저 상품을 선택하세요.");
+      const p = products.find(x => String(x.id) === String(selectedProductId));
+      if (!p) return alert("선택한 상품을 찾을 수 없습니다.");
+      $("pUpdateId").value = String(p.id);
+      $("pUpdateName").value = p.name ?? "";
+      $("pUpdatePrice").value = p.price ?? "";
+      $("pUpdateAddNum").value = "";
+    });
+
+    $("btnClearLog").addEventListener("click", () => { $("log").value = ""; });
+
+    $("productFilter").addEventListener("input", renderProducts);
+    $("btnClearProductFilter").addEventListener("click", () => { $("productFilter").value = ""; renderProducts(); });
+
+    $("orderFilter").addEventListener("input", renderOrders);
+    $("btnClearOrderFilter").addEventListener("click", () => { $("orderFilter").value = ""; renderOrders(); });
+
+    // ===== Init =====
+    (async function init(){
+      logLine("페이지 로드 완료");
+      await healthCheck();
+      try { await refreshOrders(); } catch(_) {}
+    })();
+</script>
+</body>
+</html>
