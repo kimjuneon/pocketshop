@@ -26,7 +26,7 @@ public class OrderService {
 
     @Transactional
     public void createOrder(CreateOrderRequestDto request){
-        Product product = productRepository.findById(request.getProductId())
+        Product product = productRepository.findByIdForUpdate(request.getProductId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 아이디의 제품을 찾을 수 없습니다."));
         int num = product.getNum() - request.getNum();
         if(num < 0){
