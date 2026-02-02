@@ -1,1 +1,6 @@
 # pocketshop
+## 주문 목록 조회를 실행하신 후 실행 응답
+![img.png](img.png)![img_1.png](img_1.png)
+
+## 재고 1인 상품에 대해 주문을 2번 시도했을 때 결과
+![img_2.png](img_2.png)
